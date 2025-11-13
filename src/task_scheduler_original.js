@@ -1,28 +1,31 @@
-// Copyright (c) 2025 delfineonx
 // Copyright (c) 2025 chmod (NlGBOB)
-// This product includes "Task Scheduler" created by delfineonx and chmod.
+// Copyright (c) 2025 delfineonx
+// This product includes "Task Scheduler" created by chmod and delfineonx.
 // Licensed under the Apache License, Version 2.0 (the "License").
 
-const TS = {
+globalThis.TS = {
   default: {
     tag: null,
   },
+
   cache: [
-    [{}, null],            //  0: tasks
-    [{}, null],            //  1: lastOperationByTag
-    [{}, null],            //  2: stopOperationByTag
-    [null, null],          //  3: list
-    ["__default__", null], //  4: tag
-    [1, null],             //  5: operation
-    [() => {}, null],      //  6: function
-    [{                     //  7: errorMessage
-      str: null,
-      style: {
-        color: "#ff9d87",
-        fontWeight: "600",
-        fontSize: "1rem"
+    null,                   //  0: "temp value"
+    null,                   //  1: "result"
+    "__default__",          //  2: tag
+    1,                      //  3: operation
+    () => {},               //  4: function
+    {},                     //  5: "dummy object"
+    null,                   //  6: tasks
+    null,                   //  7: lastOperationByTag
+    null,                   //  8: stopOperationByTag
+    [{                      //  9: errorMessage
+      str: null,            // 
+      style: {              // 
+        color: "#ff9d87",   // 
+        fontWeight: "600",  // 
+        fontSize: "1rem"    // 
       }
-    }],
+    }]
   ],
 
   tasks: {},
@@ -35,75 +38,89 @@ const TS = {
   dispatcher: {
     get 1() {
       const cache = TS.cache;
-      const _tasks_ = cache[0];
-      const _lastOperationByTag_ = cache[1];
-      const _stopOperationByTag_ = cache[2];
-      const _function_ = cache[6];
+
       const lastOperationByTag = TS.lastOperationByTag;
       const stopOperationByTag = TS.stopOperationByTag;
       const list = TS.tasks[TS.currentTick];
-      const l_task = list[0];
-      const l_tag = list[1];
-      const l_operation = list[2];
+
+      const _task_ = list[0];
+      const _tag_ = list[1];
+      const _operation_ = list[2];
+
       let index = TS.activeIndex;
       let tag = undefined;
       let isLastTaskByTag = false;
+      let isCriticalError = 0;
+
       try {
         while (true) {
-          _function_[1] = l_task[index];
-          tag = l_tag[index];
-          isLastTaskByTag = +(lastOperationByTag[tag] === l_operation[index]);
-          _function_[+(l_operation[index] > stopOperationByTag[tag])]();
-          delete (_lastOperationByTag_[isLastTaskByTag])[tag];
-          delete (_stopOperationByTag_[isLastTaskByTag])[tag];
+          cache[0] = _task_[index];
+          tag = _tag_[index];
+          isLastTaskByTag = +(lastOperationByTag[tag] === _operation_[index]);
+
+          cache[!(_operation_[index] > stopOperationByTag[tag]) << 2]();
+
+          delete (cache[5 + isLastTaskByTag * 2])[tag];
+          delete (cache[5 + isLastTaskByTag * 3])[tag];
+
           index = ++TS.activeIndex;
           if (index < list[3]) { continue; }
           break;
         }
+
         delete TS.tasks[TS.currentTick++];
         TS.activeIndex = 0;
         return 1;
       } catch (error) {
-        const isCriticalError = +(error.message === "out of memory");
-        cache[7][0].str = "Scheduler: " + error.name + ": " + error.message + ".";
+        isCriticalError = +(error.message === "out of memory");
+
+        cache[9][0].str = "Scheduler: " + error.name + ": " + error.message + ".";
         TS.dispatcher[(isCriticalError ^ 1) << 1];
-        delete (_lastOperationByTag_[isLastTaskByTag])[tag];
-        delete (_stopOperationByTag_[isLastTaskByTag])[tag];
-        delete (_tasks_[isCriticalError])[TS.currentTick];
+
+        delete (cache[5 + isLastTaskByTag * 2])[tag];
+        delete (cache[5 + isLastTaskByTag * 3])[tag];
+        delete (cache[5 + isCriticalError])[TS.currentTick];
+
         TS.activeIndex *= isCriticalError ^ 1;
         return isCriticalError ^ 1;
       }
     },
+
     get 2() {
       api.broadcastMessage(TS.errorMessage);
       ++TS.activeIndex;
     },
   },
 
-  run(task, delay, tag) {
+  run(task, delayMs, tag) {
     const cache = TS.cache;
-    const _list_ = cache[3];
-    const _tag_ = cache[4];
-    const _operation_ = cache[5];
-    const targetTick = TS.currentTick - ~delay - 1;
-    _list_[0] = [[], [], [], 0];
-    let list = _list_[1] = TS.tasks[targetTick];
-    list = TS.tasks[targetTick] = _list_[+!!list];
-    _list_[0] = null;
-    _list_[1] = null;
-    list[0][list[3]] = task;
-    _tag_[1] = tag;
-    tag = list[1][list[3]] = _tag_[+!!tag];
-    TS.lastOperationByTag[tag] = list[2][list[3]] = ++TS.operation;
+
+    let delayTicks = ((delayMs | 0) * 0.02) | 0;
+    delayTicks = delayTicks & ~(delayTicks >> 31);  // delayTicks > 0 ? delayTicks : 0
+    const targetTick = TS.currentTick + delayTicks;
+
+    cache[0] = [[], [], [], 0];
+    cache[1] = TS.tasks[targetTick];
+    const list = TS.tasks[targetTick] = cache[+!!cache[1]];
+    cache[1] = null;
+
+    cache[0] = task;
+    list[0][list[3]] = cache[(typeof task !== "function") << 2];
+
+    cache[0] = tag;
+    const taskTag = list[1][list[3]] = cache[(typeof tag !== "string") << 1];
+
+    TS.lastOperationByTag[taskTag] = list[2][list[3]] = ++TS.operation;
+
     ++list[3];
-    _operation_[1] = TS.stopOperationByTag[tag];
-    TS.stopOperationByTag[tag] = _operation_[+!!_operation_[1]];
+
+    cache[0] = TS.stopOperationByTag[taskTag];
+    TS.stopOperationByTag[taskTag] = cache[!cache[0] * 3];
   },
 
   stop(tag) {
-    const _stopOperationByTag_ = TS.cache[2];
-    (_stopOperationByTag_[+!!TS.stopOperationByTag[tag]])[tag] = ++TS.operation;
-    delete (_stopOperationByTag_[0])[tag];
+    (TS.cache[5 + !!TS.stopOperationByTag[tag] * 3])[tag] = ++TS.operation;
+    delete (TS.cache[5])[tag];
   },
 
   tick() {
@@ -111,27 +128,29 @@ const TS = {
   },
 };
 
-const BTScache = TS.cache;
-const BTSdefault = TS.default;
+{
+  const TScache = TS.cache;
+  const TSdefault = TS.default;
 
-BTScache[0][1] = TS.tasks;
-BTScache[1][1] = TS.lastOperationByTag;
-BTScache[2][1] = TS.stopOperationByTag;
+  TScache[6] = TS.tasks;
+  TScache[7] = TS.lastOperationByTag;
+  TScache[8] = TS.stopOperationByTag;
 
-Object.defineProperty(BTSdefault, "tag", {
-  configurable: true,
-  get: () => {
-    return BTScache[4][0];
-  },
-  set: (value) => {
-    BTScache[4][0] = value;
-  },
-});
+  Object.defineProperty(TSdefault, "tag", {
+    configurable: true,
+    get: () => {
+      return TScache[4];
+    },
+    set: (value) => {
+      TScache[4] = value;
+    },
+  });
+}
 
 Object.seal(TS);
-
 globalThis.Scheduler = TS;
+void 0;
 
 tick = () => {
-  Scheduler.tick();
+  TS.tick();
 };
