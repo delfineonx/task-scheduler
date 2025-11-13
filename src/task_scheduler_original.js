@@ -50,7 +50,6 @@ globalThis.TS = {
       let index = TS.activeIndex;
       let tag = undefined;
       let isLastTaskByTag = false;
-      let isCriticalError = 0;
 
       try {
         while (true) {
@@ -72,7 +71,7 @@ globalThis.TS = {
         TS.activeIndex = 0;
         return 1;
       } catch (error) {
-        isCriticalError = +(error.message === "out of memory");
+        const isCriticalError = +(error.message === "out of memory");
 
         cache[9][0].str = "Scheduler: " + error.name + ": " + error.message + ".";
         TS.dispatcher[(isCriticalError ^ 1) << 1];
@@ -87,7 +86,7 @@ globalThis.TS = {
     },
 
     get 2() {
-      api.broadcastMessage(TS.errorMessage);
+      api.broadcastMessage(TS.cache[9]);
       ++TS.activeIndex;
     },
   },
