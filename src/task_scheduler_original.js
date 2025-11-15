@@ -37,17 +37,18 @@ globalThis.TS = {
 
   dispatcher: {
     get 1() {
-      const cache = TS.cache;
+      const self = TS;
+      const cache = self.cache;
 
-      const lastOperationByTag = TS.lastOperationByTag;
-      const stopOperationByTag = TS.stopOperationByTag;
-      const list = TS.tasks[TS.currentTick];
+      const lastOperationByTag = self.lastOperationByTag;
+      const stopOperationByTag = self.stopOperationByTag;
+      const list = self.tasks[self.currentTick];
 
       const _task_ = list[0];
       const _tag_ = list[1];
       const _operation_ = list[2];
 
-      let index = TS.activeIndex;
+      let index = self.activeIndex;
       let tag = undefined;
       let isLastTaskByTag = false;
 
@@ -62,26 +63,26 @@ globalThis.TS = {
           delete (cache[5 + isLastTaskByTag * 2])[tag];
           delete (cache[5 + isLastTaskByTag * 3])[tag];
 
-          index = ++TS.activeIndex;
-          if (index < list[3]) { continue; }
+          index = ++self.activeIndex;
+          if (index < _task_.length) { continue; }
           break;
         }
 
-        delete TS.tasks[TS.currentTick++];
-        TS.activeIndex = 0;
-        return 1;
+        delete self.tasks[self.currentTick];
+        self.activeIndex = 0;
       } catch (error) {
         const isCriticalError = +(error.message === "out of memory");
 
-        cache[9][0].str = "Scheduler: " + error.name + ": " + error.message + ".";
-        TS.dispatcher[(isCriticalError ^ 1) << 1];
+        cache[9][0].str = "Scheduler [" + tag + "]: " + error.name + ": " + error.message + ".";
+        self.dispatcher[(isCriticalError ^ 1) << 1];
 
         delete (cache[5 + isLastTaskByTag * 2])[tag];
         delete (cache[5 + isLastTaskByTag * 3])[tag];
-        delete (cache[5 + isCriticalError])[TS.currentTick];
 
-        TS.activeIndex *= isCriticalError ^ 1;
-        return isCriticalError ^ 1;
+        delete (cache[5 + isCriticalError])[self.currentTick];
+        self.activeIndex *= (isCriticalError ^ 1);
+
+        self.dispatcher[isCriticalError ^ 1];
       }
     },
 
@@ -92,29 +93,29 @@ globalThis.TS = {
   },
 
   run(task, delayMs, tag) {
-    const cache = TS.cache;
+    const self = TS;
+    const cache = self.cache;
 
     let delayTicks = ((delayMs | 0) * 0.02) | 0;
     delayTicks = delayTicks & ~(delayTicks >> 31);  // delayTicks > 0 ? delayTicks : 0
-    const targetTick = TS.currentTick + delayTicks;
+    const targetTick = self.currentTick + delayTicks;
 
-    cache[0] = [[], [], [], 0];
-    cache[1] = TS.tasks[targetTick];
-    const list = TS.tasks[targetTick] = cache[+!!cache[1]];
+    cache[0] = [[], [], []];
+    cache[1] = self.tasks[targetTick];
+    const list = self.tasks[targetTick] = cache[+!!cache[1]];
     cache[1] = null;
+    const index = list[0].length;
 
     cache[0] = task;
-    list[0][list[3]] = cache[(typeof task !== "function") << 2];
+    list[0][index] = cache[(typeof task !== "function") << 2];
 
     cache[0] = tag;
-    const taskTag = list[1][list[3]] = cache[(typeof tag !== "string") << 1];
+    const taskTag = list[1][index] = cache[(typeof tag !== "string") << 1];
 
-    TS.lastOperationByTag[taskTag] = list[2][list[3]] = ++TS.operation;
+    self.lastOperationByTag[taskTag] = list[2][index] = ++self.operation;
 
-    ++list[3];
-
-    cache[0] = TS.stopOperationByTag[taskTag];
-    TS.stopOperationByTag[taskTag] = cache[!cache[0] * 3];
+    cache[0] = self.stopOperationByTag[taskTag];
+    self.stopOperationByTag[taskTag] = cache[!cache[0] * 3];
   },
 
   stop(tag) {
@@ -123,7 +124,8 @@ globalThis.TS = {
   },
 
   tick() {
-    TS.currentTick += TS.dispatcher[+!!TS.tasks[TS.currentTick]] ^ 1;
+    TS.dispatcher[+!!TS.tasks[TS.currentTick]];
+    TS.currentTick++;
   },
 };
 
@@ -136,12 +138,12 @@ globalThis.TS = {
   TScache[8] = TS.stopOperationByTag;
 
   Object.defineProperty(TSdefault, "tag", {
-    configurable: true,
+    configurable: false,
     get: () => {
-      return TScache[4];
+      return TScache[2];
     },
     set: (value) => {
-      TScache[4] = value;
+      TScache[2] = value;
     },
   });
 }
@@ -149,7 +151,3 @@ globalThis.TS = {
 Object.seal(TS);
 globalThis.Scheduler = TS;
 void 0;
-
-tick = () => {
-  TS.tick();
-};
