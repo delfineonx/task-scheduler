@@ -3,7 +3,7 @@
 // This product includes "Task Scheduler" created by chmod and delfineonx.
 // Licensed under the Apache License, Version 2.0 (the "License").
 
-globalThis.TS={
+const S={
   default:{
     tag:null
   },
@@ -34,8 +34,7 @@ globalThis.TS={
   t:0,
   D:{
     get 1(){
-      let S=TS,
-        C=S.C,
+      let C=S.C,
         L=S.L,
         P=S.P,
         s=S.K[S.t],
@@ -71,13 +70,12 @@ globalThis.TS={
       }
     },
     get 2(){
-      api.broadcastMessage(TS.C[9]);
-      ++TS.a
+      api.broadcastMessage(S.C[9]);
+      ++S.a
     }
   },
   run(k,y,a){
-    let S=TS;
-    C=S.C,
+    let C=S.C,
     d=(y|0)*.02|0;
     d=d&~(d>>31);
     let t=S.t+d;
@@ -95,27 +93,28 @@ globalThis.TS={
     S.P[g]=C[!C[0]*3]
   },
   stop(g){
-    TS.C[5+!!TS.P[g]*3][g]=++TS.o;
-    delete TS.C[5][g]
+    S.C[5+!!S.P[g]*3][g]=++S.o;
+    delete S.C[5][g]
   },
   tick(){
-    TS.D[+!!TS.K[TS.t]];
-    TS.t++
+    S.D[+!!S.K[S.t]];
+    S.t++
   }
 };
+
 {
-  const C=TS.C;
-  const d=TS.default;
-  C[6]=TS.K;
-  C[7]=TS.L;
-  C[8]=TS.P;
+  let C=S.C,
+  d=S.default;
+  C[6]=S.K;
+  C[7]=S.L;
+  C[8]=S.P;
   Object.defineProperty(d,"tag",{
     configurable:!1,
     get:()=>{return C[2]},
     set:v=>{C[2]=v}
   })
 }
-Object.seal(TS);
-globalThis.Scheduler=TS;
+Object.seal(S);
+globalThis.Scheduler=globalThis.TS=S;
 void 0;
 

@@ -3,7 +3,7 @@
 // This product includes "Task Scheduler" created by chmod and delfineonx.
 // Licensed under the Apache License, Version 2.0 (the "License").
 
-globalThis.TS = {
+const S = {
   default: {
     tag: null,
   },
@@ -37,18 +37,17 @@ globalThis.TS = {
 
   dispatcher: {
     get 1() {
-      const self = TS;
-      const cache = self.cache;
+      const cache = S.cache;
 
-      const lastOperationByTag = self.lastOperationByTag;
-      const stopOperationByTag = self.stopOperationByTag;
-      const list = self.tasks[self.currentTick];
+      const lastOperationByTag = S.lastOperationByTag;
+      const stopOperationByTag = S.stopOperationByTag;
+      const list = S.tasks[S.currentTick];
 
       const _task_ = list[0];
       const _tag_ = list[1];
       const _operation_ = list[2];
 
-      let index = self.activeIndex;
+      let index = S.activeIndex;
       let tag = undefined;
       let isLastTaskByTag = false;
 
@@ -63,46 +62,45 @@ globalThis.TS = {
           delete (cache[5 + isLastTaskByTag * 2])[tag];
           delete (cache[5 + isLastTaskByTag * 3])[tag];
 
-          index = ++self.activeIndex;
+          index = ++S.activeIndex;
           if (index < _task_.length) { continue; }
           break;
         }
 
-        delete self.tasks[self.currentTick];
-        self.activeIndex = 0;
+        delete S.tasks[S.currentTick];
+        S.activeIndex = 0;
       } catch (error) {
         const isCriticalError = +(error.message === "out of memory");
 
         cache[9][0].str = "Scheduler [" + tag + "]: " + error.name + ": " + error.message + ".";
-        self.dispatcher[(isCriticalError ^ 1) << 1];
+        S.dispatcher[(isCriticalError ^ 1) << 1];
 
         delete (cache[5 + isLastTaskByTag * 2])[tag];
         delete (cache[5 + isLastTaskByTag * 3])[tag];
 
-        delete (cache[5 + isCriticalError])[self.currentTick];
-        self.activeIndex *= (isCriticalError ^ 1);
+        delete (cache[5 + isCriticalError])[S.currentTick];
+        S.activeIndex *= (isCriticalError ^ 1);
 
-        self.dispatcher[isCriticalError ^ 1];
+        S.dispatcher[isCriticalError ^ 1];
       }
     },
 
     get 2() {
-      api.broadcastMessage(TS.cache[9]);
-      ++TS.activeIndex;
+      api.broadcastMessage(S.cache[9]);
+      ++S.activeIndex;
     },
   },
 
   run(task, delayMs, tag) {
-    const self = TS;
-    const cache = self.cache;
+    const cache = S.cache;
 
     let delayTicks = ((delayMs | 0) * 0.02) | 0;
     delayTicks = delayTicks & ~(delayTicks >> 31);  // delayTicks > 0 ? delayTicks : 0
-    const targetTick = self.currentTick + delayTicks;
+    const targetTick = S.currentTick + delayTicks;
 
     cache[0] = [[], [], []];
-    cache[1] = self.tasks[targetTick];
-    const list = self.tasks[targetTick] = cache[+!!cache[1]];
+    cache[1] = S.tasks[targetTick];
+    const list = S.tasks[targetTick] = cache[+!!cache[1]];
     cache[1] = null;
     const index = list[0].length;
 
@@ -112,30 +110,30 @@ globalThis.TS = {
     cache[0] = tag;
     const taskTag = list[1][index] = cache[(typeof tag !== "string") << 1];
 
-    self.lastOperationByTag[taskTag] = list[2][index] = ++self.operation;
+    S.lastOperationByTag[taskTag] = list[2][index] = ++S.operation;
 
-    cache[0] = self.stopOperationByTag[taskTag];
-    self.stopOperationByTag[taskTag] = cache[!cache[0] * 3];
+    cache[0] = S.stopOperationByTag[taskTag];
+    S.stopOperationByTag[taskTag] = cache[!cache[0] * 3];
   },
 
   stop(tag) {
-    (TS.cache[5 + !!TS.stopOperationByTag[tag] * 3])[tag] = ++TS.operation;
-    delete (TS.cache[5])[tag];
+    (S.cache[5 + !!S.stopOperationByTag[tag] * 3])[tag] = ++S.operation;
+    delete (S.cache[5])[tag];
   },
 
   tick() {
-    TS.dispatcher[+!!TS.tasks[TS.currentTick]];
-    TS.currentTick++;
+    S.dispatcher[+!!S.tasks[S.currentTick]];
+    S.currentTick++;
   },
 };
 
 {
-  const TScache = TS.cache;
-  const TSdefault = TS.default;
+  const TScache = S.cache;
+  const TSdefault = S.default;
 
-  TScache[6] = TS.tasks;
-  TScache[7] = TS.lastOperationByTag;
-  TScache[8] = TS.stopOperationByTag;
+  TScache[6] = S.tasks;
+  TScache[7] = S.lastOperationByTag;
+  TScache[8] = S.stopOperationByTag;
 
   Object.defineProperty(TSdefault, "tag", {
     configurable: false,
@@ -148,6 +146,6 @@ globalThis.TS = {
   });
 }
 
-Object.seal(TS);
-globalThis.Scheduler = TS;
+Object.seal(S);
+globalThis.Scheduler = globalThis.TS = S;
 void 0;
