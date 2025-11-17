@@ -3,6 +3,7 @@
 // This product includes "Task Scheduler" created by chmod and delfineonx.
 // Licensed under the Apache License, Version 2.0 (the "License").
 
+{
 const S={
   default:{
     tag:null
@@ -13,10 +14,12 @@ const S={
     "__default__",
     1,
     ()=>{},
+    "Scheduler: Critical Error: tasks overflow.",
+    null,
+    null,
+    null,
+    null,
     {},
-    null,
-    null,
-    null,
     [{
       str:null,
       style:{
@@ -26,7 +29,7 @@ const S={
       }
     }]
   ],
-  K:{},
+  T:{},
   L:{},
   P:{},
   o:1,
@@ -37,51 +40,51 @@ const S={
       let C=S.C,
         L=S.L,
         P=S.P,
-        s=S.K[S.t],
+        s=S.T[S.t],
         K=s[0],
         G=s[1],
         O=s[2],
         i=S.a,
-        g=undefined,
-        l=!1;
+        g=void 0,
+        l=!0,
+        k,
+        r;
       try{
-        while(!0){
+        do{
           C[0]=K[i];
           g=G[i];
-          l=+(L[g]===O[i]);
+          l=+(L[g]!==O[i]);
           C[!(O[i]>P[g])<<2]();
-          delete C[5+l*2][g];
-          delete C[5+l*3][g];
-          i=++S.a;
-          if(i<K.length){continue}
-          break
-        }
-        delete S.K[S.t];
+          delete C[8+(l<<1)][g];
+          delete C[9+l][g];
+          i=++S.a
+        }while(i<K.length);
+        delete S.T[S.t];
         S.a=0
       }catch(e){
-        let r=+(e.message==="out of memory");
-        C[9][0].str="Scheduler ["+g+"]: "+e.name+": "+e.message+".";
-        S.D[(r^1)<<1];
-        delete C[5+l*2][g];
-        delete C[5+l*3][g];
-        delete C[5+r][S.t];
-        S.a*=r^1;
-        S.D[r^1]
+        k=e.stack;
+        r=(e.message==="out of memory"&k[7]+k[8]+k[9]==="run")^1;
+        C[0]="Scheduler ["+g+"]: "+e.name+": "+e.message+".";
+        C[11][0].str=C[(r^1)*5];
+        api.broadcastMessage(S.C[11]);
+        C[6+(r^1)*4].a++;
+        delete C[10].a;
+        delete C[8+(l<<1)][g];
+        delete C[9+l][g];
+        delete C[7+r*3][S.t];
+        S.a*=r;
+        S.D[r]
       }
-    },
-    get 2(){
-      api.broadcastMessage(S.C[9]);
-      ++S.a
     }
   },
   run(k,y,a){
     let C=S.C,
-    d=(y|0)*.02|0;
+      d=((y|0)*.02)|0;
     d=d&~(d>>31);
     let t=S.t+d;
     C[0]=[[],[],[]];
-    C[1]=S.K[t];
-    let s=S.K[t]=C[+!!C[1]];
+    C[1]=S.T[t];
+    let s=S.T[t]=C[+!!C[1]];
     C[1]=null;
     let i=s[0].length;
     C[0]=k;
@@ -93,28 +96,26 @@ const S={
     S.P[g]=C[!C[0]*3]
   },
   stop(g){
-    S.C[5+!!S.P[g]*3][g]=++S.o;
-    delete S.C[5][g]
+    S.C[9+!S.P[g]][g]=++S.o;
+    delete S.C[10][g]
   },
   tick(){
-    S.D[+!!S.K[S.t]];
+    S.D[+!!S.T[S.t]];
     S.t++
   }
 };
-
-{
-  let C=S.C,
-  d=S.default;
-  C[6]=S.K;
-  C[7]=S.L;
-  C[8]=S.P;
-  Object.defineProperty(d,"tag",{
-    configurable:!1,
-    get:()=>{return C[2]},
-    set:v=>{C[2]=v}
-  })
-}
+let C=S.C;
+C[6]=S;
+C[7]=S.T;
+C[8]=S.L;
+C[9]=S.P;
+Object.defineProperty(S.default,"tag",{
+  configurable:!1,
+  get:()=>{return C[2]},
+  set:v=>{C[2]=v}
+});
 Object.seal(S);
 globalThis.Scheduler=globalThis.TS=S;
-void 0;
+void 0
+}
 

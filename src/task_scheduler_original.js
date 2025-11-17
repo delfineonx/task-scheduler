@@ -3,27 +3,31 @@
 // This product includes "Task Scheduler" created by chmod and delfineonx.
 // Licensed under the Apache License, Version 2.0 (the "License").
 
+{
+
 const S = {
   default: {
     tag: null,
   },
 
   cache: [
-    null,                   //  0: "temp value"
-    null,                   //  1: "result"
-    "__default__",          //  2: tag
-    1,                      //  3: operation
-    () => {},               //  4: function
-    {},                     //  5: "dummy object"
-    null,                   //  6: tasks
-    null,                   //  7: lastOperationByTag
-    null,                   //  8: stopOperationByTag
-    [{                      //  9: errorMessage
-      str: null,            // 
-      style: {              // 
-        color: "#ff9d87",   // 
-        fontWeight: "600",  // 
-        fontSize: "1rem"    // 
+    null,                                         //  0: "temp value"
+    null,                                         //  1: "result"
+    "__default__",                                //  2: tag
+    1,                                            //  3: operation
+    () => {},                                     //  4: function
+    "Scheduler: Critical Error: tasks overflow.", //  5: "critical error message"
+    null,                                         //  6: Scheduler
+    null,                                         //  7: tasks
+    null,                                         //  8: lastOperationByTag
+    null,                                         //  9: stopOperationByTag
+    {},                                           // 10: "dummy object"
+    [{                                            // 11: errorMessage
+      str: null,                                  // 
+      style: {                                    // 
+        color: "#ff9d87",                         // 
+        fontWeight: "600",                        // 
+        fontSize: "1rem"                          // 
       }
     }]
   ],
@@ -41,53 +45,53 @@ const S = {
 
       const lastOperationByTag = S.lastOperationByTag;
       const stopOperationByTag = S.stopOperationByTag;
-      const list = S.tasks[S.currentTick];
+      const lists = S.tasks[S.currentTick];
 
-      const _task_ = list[0];
-      const _tag_ = list[1];
-      const _operation_ = list[2];
+      const taskList = lists[0];
+      const tagList = lists[1];
+      const operationList = lists[2];
 
       let index = S.activeIndex;
       let tag = undefined;
-      let isLastTaskByTag = false;
+      let isNotLastTaskByTag = true;
+
+      let errorStack;
+      let isTaskError;
 
       try {
-        while (true) {
-          cache[0] = _task_[index];
-          tag = _tag_[index];
-          isLastTaskByTag = +(lastOperationByTag[tag] === _operation_[index]);
+        do {
+          cache[0] = taskList[index];
+          tag = tagList[index];
+          isNotLastTaskByTag = +(lastOperationByTag[tag] !== operationList[index]);
 
-          cache[!(_operation_[index] > stopOperationByTag[tag]) << 2]();
+          cache[!(operationList[index] > stopOperationByTag[tag]) << 2]();
 
-          delete (cache[5 + isLastTaskByTag * 2])[tag];
-          delete (cache[5 + isLastTaskByTag * 3])[tag];
+          delete (cache[8 + (isNotLastTaskByTag << 1)])[tag];
+          delete (cache[9 + isNotLastTaskByTag])[tag];
 
           index = ++S.activeIndex;
-          if (index < _task_.length) { continue; }
-          break;
-        }
+        } while (index < taskList.length);
 
         delete S.tasks[S.currentTick];
         S.activeIndex = 0;
       } catch (error) {
-        const isCriticalError = +(error.message === "out of memory");
+        errorStack = error.stack;
+        isTaskError = ((error.message === "out of memory") & (errorStack[7] + errorStack[8] + errorStack[9] === "run")) ^ 1;
 
-        cache[9][0].str = "Scheduler [" + tag + "]: " + error.name + ": " + error.message + ".";
-        S.dispatcher[(isCriticalError ^ 1) << 1];
+        cache[0] = "Scheduler [" + tag + "]: " + error.name + ": " + error.message + ".";
+        cache[11][0].str = cache[(isTaskError ^ 1) * 5];
+        api.broadcastMessage(S.cache[11]);
+        (cache[6 + (isTaskError ^ 1) * 4]).activeIndex++;
+        delete (cache[10]).activeIndex;
 
-        delete (cache[5 + isLastTaskByTag * 2])[tag];
-        delete (cache[5 + isLastTaskByTag * 3])[tag];
+        delete (cache[8 + (isNotLastTaskByTag << 1)])[tag];
+        delete (cache[9 + isNotLastTaskByTag])[tag];
 
-        delete (cache[5 + isCriticalError])[S.currentTick];
-        S.activeIndex *= (isCriticalError ^ 1);
+        delete (cache[7 + isTaskError * 3])[S.currentTick];
+        S.activeIndex *= isTaskError;
 
-        S.dispatcher[isCriticalError ^ 1];
+        S.dispatcher[isTaskError];
       }
-    },
-
-    get 2() {
-      api.broadcastMessage(S.cache[9]);
-      ++S.activeIndex;
     },
   },
 
@@ -100,25 +104,25 @@ const S = {
 
     cache[0] = [[], [], []];
     cache[1] = S.tasks[targetTick];
-    const list = S.tasks[targetTick] = cache[+!!cache[1]];
+    const lists = S.tasks[targetTick] = cache[+!!cache[1]];
     cache[1] = null;
-    const index = list[0].length;
+    const index = lists[0].length;
 
     cache[0] = task;
-    list[0][index] = cache[(typeof task !== "function") << 2];
+    lists[0][index] = cache[(typeof task !== "function") << 2];
 
     cache[0] = tag;
-    const taskTag = list[1][index] = cache[(typeof tag !== "string") << 1];
+    const taskTag = lists[1][index] = cache[(typeof tag !== "string") << 1];
 
-    S.lastOperationByTag[taskTag] = list[2][index] = ++S.operation;
+    S.lastOperationByTag[taskTag] = lists[2][index] = ++S.operation;
 
     cache[0] = S.stopOperationByTag[taskTag];
     S.stopOperationByTag[taskTag] = cache[!cache[0] * 3];
   },
 
   stop(tag) {
-    (S.cache[5 + !!S.stopOperationByTag[tag] * 3])[tag] = ++S.operation;
-    delete (S.cache[5])[tag];
+    (S.cache[9 + !S.stopOperationByTag[tag]])[tag] = ++S.operation;
+    delete (S.cache[10])[tag];
   },
 
   tick() {
@@ -127,25 +131,25 @@ const S = {
   },
 };
 
-{
-  const TScache = S.cache;
-  const TSdefault = S.default;
+const _cache_ = S.cache;
 
-  TScache[6] = S.tasks;
-  TScache[7] = S.lastOperationByTag;
-  TScache[8] = S.stopOperationByTag;
+_cache_[6] = S;
+_cache_[7] = S.tasks;
+_cache_[8] = S.lastOperationByTag;
+_cache_[9] = S.stopOperationByTag;
 
-  Object.defineProperty(TSdefault, "tag", {
-    configurable: false,
-    get: () => {
-      return TScache[2];
-    },
-    set: (value) => {
-      TScache[2] = value;
-    },
-  });
-}
+Object.defineProperty(S.default, "tag", {
+  configurable: false,
+  get: () => {
+    return _cache_[2];
+  },
+  set: (value) => {
+    _cache_[2] = value;
+  },
+});
 
 Object.seal(S);
 globalThis.Scheduler = globalThis.TS = S;
 void 0;
+
+}
