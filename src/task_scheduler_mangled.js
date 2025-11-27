@@ -66,8 +66,8 @@ const S={
         r=(e.message==="out of memory"&k[7]+k[8]+k[9]==="run")^1;
         C[0]="Scheduler ["+g+"]: "+e.name+": "+e.message+".";
         C[11][0].str=C[(r^1)*5];
-        api.broadcastMessage(S.C[11]);
-        C[6+(r^1)*4].a++;
+        api.broadcastMessage(C[11]);
+        C[6+((r^1)<<2)].a++;
         delete C[10].a;
         delete C[8+(l<<1)][g];
         delete C[9+l][g];

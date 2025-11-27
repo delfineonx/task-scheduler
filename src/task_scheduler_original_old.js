@@ -80,8 +80,8 @@ const S = {
 
         cache[0] = "Scheduler [" + tag + "]: " + error.name + ": " + error.message + ".";
         cache[11][0].str = cache[(isTaskError ^ 1) * 5];
-        api.broadcastMessage(S.cache[11]);
-        (cache[6 + (isTaskError ^ 1) * 4]).activeIndex++;
+        api.broadcastMessage(cache[11]);
+        (cache[6 + ((isTaskError ^ 1) << 2)]).activeIndex++;
         delete (cache[10]).activeIndex;
 
         delete (cache[8 + (isNotLastTaskByTag << 1)])[tag];
@@ -126,7 +126,7 @@ const S = {
   },
 
   tick() {
-    S.dispatcher[+!!S.tasks[S.currentTick]];
+    S.dispatcher[+(!!S.tasks[S.currentTick])];
     S.currentTick++;
   },
 };
@@ -153,3 +153,4 @@ globalThis.Scheduler = globalThis.TS = S;
 void 0;
 
 }
+
