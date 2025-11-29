@@ -1,8 +1,6 @@
-// Copyright (c) 2025 delfineonx (delfineonx)
-// Copyright (c) 2025 chmod (nlgbob_26003)
-// Copyright (c) 2025 FrostyCaveman (_frostycaveman)
+// Copyright (c) 2025 delfineonx, chmod, FrostyCaveman
 // This product includes "Task Scheduler" created by delfineonx, chmod, FrostyCaveman.
-// Licensed under the Apache License, Version 2.0 (the "License").
+// Licensed under the Apache License, Version 2.0.
 
 {
 let K={},L={},P={},o=0,T=0,a=0,c=!1,
