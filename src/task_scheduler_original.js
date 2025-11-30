@@ -3,6 +3,13 @@
 // Licensed under the Apache License, Version 2.0.
 
 {
+  const _TS = {
+    run: null,
+    stop: null,
+
+    tick: null,
+  };
+
   const tasks = {};
   const lastTaskOperationByTag = {};
   const stopOperationByTag = {};
@@ -11,7 +18,7 @@
   let activeIndex = 0;
   let isTaskCanceled = false;
 
-  const run = (task, delayMs, tag) => {
+  _TS.run = (task, delayMs, tag) => {
     const delayTicks = ((delayMs | 0) * 0.02) | 0;
     const targetTick = currentTick + (delayTicks & ~(delayTicks >> 31));  // delayTicks > 0 ? delayTicks : 0
     const lists = tasks[targetTick];
@@ -27,11 +34,11 @@
     }
   };
 
-  const stop = (tag) => {
+  _TS.stop = (tag) => {
     stopOperationByTag[tag] = ++operation;
   };
 
-  const tick = () => {
+  _TS.tick = () => {
     const lists = tasks[currentTick];
     if (lists) {
       const taskList = lists[0];
@@ -73,11 +80,8 @@
     currentTick++;
   };
 
-  globalThis.TS = Object.freeze({
-    run,
-    stop,
-    tick,
-  });
+  Object.freeze(_TS);
+  globalThis.TS = _TS;
 
   void 0;
 }
