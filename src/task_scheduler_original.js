@@ -10,36 +10,39 @@
     tick: null,
   };
 
-  const tasks = {};
-  const lastTaskOperationByTag = {};
-  const stopOperationByTag = {};
-  let operation = 0;
-  let currentTick = 0;
-  let activeIndex = 0;
-  let isTaskCanceled = false;
+  const _defaultTag = "__default__";
+  const _tasks = {};
+  const _lastTaskOperationByTag = {};
+  const _stopOperationByTag = {};
+  let _operation = 0;
+  let _currentTick = 0;
+  let _activeIndex = 0;
+  let _isTaskCanceled = false;
 
   _TS.run = (task, delayMs, tag) => {
+    tag ??= _defaultTag;
     const delayTicks = ((delayMs | 0) * 0.02) | 0;
-    const targetTick = currentTick + (delayTicks & ~(delayTicks >> 31));  // delayTicks > 0 ? delayTicks : 0
-    const lists = tasks[targetTick];
+    const targetTick = _currentTick + (delayTicks & ~(delayTicks >> 31));  // delayTicks > 0 ? delayTicks : 0
+    const lists = _tasks[targetTick];
     if (!lists) {
-      tasks[targetTick] = [[task], [tag], [++operation]];
-      lastTaskOperationByTag[tag] = operation;
+      _tasks[targetTick] = [[task], [tag], [++_operation]];
+      _lastTaskOperationByTag[tag] = _operation;
     } else {
       const index = lists[0].length;
       lists[0][index] = task;
       lists[1][index] = tag;
-      lists[2][index] = ++operation;
-      lastTaskOperationByTag[tag] = operation;
+      lists[2][index] = ++_operation;
+      _lastTaskOperationByTag[tag] = _operation;
     }
   };
 
   _TS.stop = (tag) => {
-    stopOperationByTag[tag] = ++operation;
+    tag ??= _defaultTag;
+    _stopOperationByTag[tag] = ++_operation;
   };
 
   _TS.tick = () => {
-    const lists = tasks[currentTick];
+    const lists = _tasks[_currentTick];
     if (lists) {
       const taskList = lists[0];
       const tagList = lists[1];
@@ -47,37 +50,37 @@
       let tag, operation;
       do {
         try {
-          while (operation = operationList[activeIndex]) {
-            tag = tagList[activeIndex];
-            isTaskCanceled ||= (operation < stopOperationByTag[tag]);
-            if (operation === lastTaskOperationByTag[tag]) {
-              delete lastTaskOperationByTag[tag];
-              delete stopOperationByTag[tag];
+          while (operation = operationList[_activeIndex]) {
+            tag = tagList[_activeIndex];
+            _isTaskCanceled ||= (operation < _stopOperationByTag[tag]);
+            if (operation === _lastTaskOperationByTag[tag]) {
+              delete _lastTaskOperationByTag[tag];
+              delete _stopOperationByTag[tag];
             }
-            if (!isTaskCanceled) {
-              taskList[activeIndex]();
+            if (!_isTaskCanceled) {
+              taskList[_activeIndex]();
             }
-            isTaskCanceled = false;
-            activeIndex++;
+            _isTaskCanceled = false;
+            _activeIndex++;
           }
-          delete tasks[currentTick];
-          activeIndex = 0;
+          delete _tasks[_currentTick];
+          _activeIndex = 0;
           break;
         } catch (error) {
-          isTaskCanceled = false;
-          activeIndex++;
+          _isTaskCanceled = false;
+          _activeIndex++;
           if ((error.message !== "out of memory") || (error.stack[7] + error.stack[8] + error.stack[9] !== "run")) {
             api.broadcastMessage("Scheduler [" + tag + "]: " + error.name + ": " + error.message + ".", { color: "#ff9d87" });
           } else {
-            delete tasks[currentTick];
-            activeIndex = 0;
+            delete _tasks[_currentTick];
+            _activeIndex = 0;
             api.broadcastMessage("Scheduler: Memory Error: tasks overflow.", { color: "#ff9d87" });
             break;
           }
         }
       } while (true);
     }
-    currentTick++;
+    _currentTick++;
   };
 
   Object.freeze(_TS);

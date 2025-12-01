@@ -8,6 +8,7 @@
     stop:null,
     tick:null
   },
+  U="__default__",
   K={},
   L={},
   P={},
@@ -16,9 +17,10 @@
   a=0,
   c=!1;
   _TS.run=(f,s,g)=>{
+    g??=U;
     let d=(s|0)*.02|0,
-      t=T+(d&~(d>>31)),
-      l=K[t];
+    t=T+(d&~(d>>31)),
+    l=K[t];
     if(!l){
       K[t]=[[f],[g],[++o]];
       L[g]=o
@@ -30,17 +32,17 @@
       L[g]=o
     }
   };
-  _TS.stop=(g)=>{
+  _TS.stop=g=>{
+    g??=U;
     P[g]=++o
   };
   _TS.tick=()=>{
     let l=K[T];
     if(l){
       let F=l[0],
-        G=l[1],
-        O=l[2],
-        g,
-        r;
+      G=l[1],
+      O=l[2],
+      g,r;
       do{
         try{
           while(r=O[a]){
@@ -53,14 +55,15 @@
             if(!c){
               F[a]()
             }
-            c=false;
+            c=!1;
             a++
           }
           delete K[T];
           a=0;
           break
-        }catch(e){
-          c=false;
+        }
+        catch(e){
+          c=!1;
           a++;
           if((e.message!=="out of memory")||(e.stack[7]+e.stack[8]+e.stack[9]!=="run")){
             api.broadcastMessage("Scheduler ["+g+"]: "+e.name+": "+e.message+".",{color:"#ff9d87"})
@@ -71,7 +74,7 @@
             break
           }
         }
-      }while(true)
+      }while(!0)
     }
     T++
   };
