@@ -3,12 +3,12 @@
 // Licensed under the Apache License, Version 2.0.
 
 {
-let _TS={run:null,stop:null,tick:null},U="__default__",K={},L={},P={},o=0,T=0,a=0,c=!1;
-_TS.run=(f,s,g)=>{g??=U;let d=(s|0)*.02|0,t=T+(d&~(d>>31)),l=K[t];if(!l){K[t]=[[f],[g],[++o]];L[g]=o}else{let i=l[0].length;l[0][i]=f;l[1][i]=g;l[2][i]=++o;L[g]=o}};
-_TS.stop=g=>{g??=U;P[g]=++o};
-_TS.tick=()=>{let l=K[T];if(l){let F=l[0],G=l[1],O=l[2],g,r;do{try{while(r=O[a]){g=G[a];c||=r<P[g];if(r===L[g]){delete L[g];delete P[g]}if(!c){F[a]()}c=!1;a++}delete K[T];a=0;break}catch(e){c=!1;a++;if((e.message!=="out of memory")||(e.stack[7]+e.stack[8]+e.stack[9]!=="run")){api.broadcastMessage("Scheduler ["+g+"]: "+e.name+": "+e.message+".",{color:"#ff9d87"})}else{delete K[T];a=0;api.broadcastMessage("Scheduler: Memory Error: tasks overflow.",{color:"#ff9d87"});break}}}while(!0)}T++};
-Object.freeze(_TS);
-globalThis.TS=_TS;
+let TS_={run:null,stop:null,tick:null},U="__default__",K={},C={},P={},O=0,T=0,A=0,R=!1,L=!1,N=0;
+TS_.run=(k,d,g)=>{g??=U;d=(d|0)*.02|0;let t=T+(d&~(d>>31)),l=K[t];if(!l){K[t]=[[k],[g],[++O]];C[g]=(C[g]|0)+1}else{let i=l[0].length;l[0][i]=k;l[1][i]=g;l[2][i]=++O;C[g]=(C[g]|0)+1}};
+TS_.stop=g=>{g??=U;if((C[g]|0)>0){P[g]=++O}};
+TS_.tick=()=>{let l=K[T];if(l){let k=l[0],g=l[1],p=l[2],a,o;do{try{while(o=p[A]){a=g[A];if(!R){L=P[a]>o;N=C[a]--}R=!0;if(N<2){delete C[a];delete P[a]}if(!L){k[A]()}R=!1;A++}delete K[T];A=0;break}catch(e){R=!1;A++;if((e.message!=="out of memory")||(e.stack[7]+e.stack[8]+e.stack[9]!=="run")){api.broadcastMessage("Scheduler ["+a+"]: "+e.name+": "+e.message+".",{color:"#ff9d87"})}else{K={};C={};P={};A=0;api.broadcastMessage("Scheduler: Memory Error: tasks overflow.",{color:"#ff9d87"});break}}}while(!0)}T++};
+Object.freeze(TS_);
+globalThis.TS=TS_;
 void 0
 }
 
