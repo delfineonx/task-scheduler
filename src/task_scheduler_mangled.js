@@ -8,6 +8,7 @@
     stop:null,
     tick:null
   },
+  F=()=>{},
   U="__default__",
   K={},
   C={},
@@ -15,24 +16,32 @@
   O=0,
   T=0,
   A=0,
-  R=!1,
+  I=1,
+  S=0,
   L=!1,
   N=0;
   TS_.run=(k,d,g)=>{
     g??=U;
     d=(d|0)*.02|0;
-    let t=T+(d&~(d>>31)),
-    l=K[t];
-    if(!l){
-      K[t]=[[k],[g],[++O]];
+    d=d&~(d>>31);
+    let t=T+d,
+    q=K[t],
+    i=0;
+    if(!q){
+      q=K[t]=[[k],[g],[++O]];
       C[g]=(C[g]|0)+1
     }else{
-      let i=l[0].length;
-      l[0][i]=k;
-      l[1][i]=g;
-      l[2][i]=++O;
+      i=q[0].length;
+      q[0][i]=k;
+      q[1][i]=g;
+      q[2][i]=++O;
       C[g]=(C[g]|0)+1
     }
+    if(!d){
+      k();
+      q[0][i]=F
+    }
+    return()=>{if(K[t]){q[0][i]=F}}
   };
   TS_.stop=g=>{
     g??=U;
@@ -41,21 +50,22 @@
     }
   };
   TS_.tick=()=>{
-    let l=K[T];
-    if(l){
-      let k=l[0],
-      g=l[1],
-      p=l[2],
-      a,o;
+    let q=K[T+=I];
+    I=0;
+    if(q){
+      let k=q[0],
+      g=q[1],
+      o=q[2],
+      a,p;
       do{
         try{
-          while(o=p[A]){
+          while(p=o[A]){
             a=g[A];
-            if(!R){
-              L=P[a]>o;
+            if(S){
+              L=P[a]>p;
               N=C[a]--
             }
-            R=!0;
+            S=0;
             if(N<2){
               delete C[a];
               delete P[a]
@@ -63,14 +73,14 @@
             if(!L){
               k[A]()
             }
-            R=!1;
+            S=1;
             A++
           }
           delete K[T];
           A=0;
           break
         }catch(e){
-          R=!1;
+          S=1;
           A++;
           if((e.message!=="out of memory")||(e.stack[7]+e.stack[8]+e.stack[9]!=="run")){
             api.broadcastMessage("Scheduler ["+a+"]: "+e.name+": "+e.message+".",{color:"#ff9d87"})
@@ -79,13 +89,15 @@
             C={};
             P={};
             A=0;
+            I=1;
+            S=0;
             api.broadcastMessage("Scheduler: Memory Error: tasks overflow.",{color:"#ff9d87"});
             break
           }
         }
       }while(!0)
     }
-    T++
+    I=1
   };
   Object.freeze(TS_);
   globalThis.TS=TS_;

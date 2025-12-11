@@ -9,6 +9,7 @@
     tick: null,
   };
 
+  const no_op = () => {};
   const _defaultTag = "__default__";
   let _tasks = {};
   let _countByTag = {};
@@ -16,25 +17,37 @@
   let _operation = 0;
   let _currentTick = 0;
   let _activeIndex = 0;
-  let _interrupted = false;
+  let _tickState = 1;
+  let _taskState = 0;
   let _canceled = false;
   let _count = 0;
 
   _TS.run = (task, delay, tag) => {
     tag ??= _defaultTag;
     delay = ((delay | 0) * 0.02) | 0;
-    const targetTick = _currentTick + (delay & ~(delay >> 31)); // delay > 0 ? delay : 0
-    const lists = _tasks[targetTick];
-    if (!lists) {
-      _tasks[targetTick] = [[task], [tag], [++_operation]];
+    delay = (delay & ~(delay >> 31)); // delay > 0 ? delay : 0
+    const targetTick = _currentTick + delay;
+    let queue = _tasks[targetTick];
+    let index = 0;
+    if (!queue) {
+      queue = _tasks[targetTick] = [[task], [tag], [++_operation]];
       _countByTag[tag] = (_countByTag[tag] | 0) + 1;
     } else {
-      const index = lists[0].length;
-      lists[0][index] = task;
-      lists[1][index] = tag;
-      lists[2][index] = ++_operation;
+      index = queue[0].length;
+      queue[0][index] = task;
+      queue[1][index] = tag;
+      queue[2][index] = ++_operation;
       _countByTag[tag] = (_countByTag[tag] | 0) + 1;
     }
+    if (!delay) {
+      task();
+      queue[0][index] = no_op;
+    }
+    return (() => {
+      if (_tasks[targetTick]) {
+        queue[0][index] = no_op;
+      }
+    });
   };
 
   _TS.stop = (tag) => {
@@ -45,21 +58,22 @@
   };
 
   _TS.tick = () => {
-    const lists = _tasks[_currentTick];
-    if (lists) {
-      const taskList = lists[0];
-      const tagList = lists[1];
-      const operationList = lists[2];
+    const queue = _tasks[_currentTick += _tickState];
+    _tickState = 0;
+    if (queue) {
+      const taskList = queue[0];
+      const tagList = queue[1];
+      const operationList = queue[2];
       let tag, operation;
       do {
         try {
           while (operation = operationList[_activeIndex]) {
             tag = tagList[_activeIndex];
-            if (!_interrupted) {
+            if (_taskState) {
               _canceled = (_stopByTag[tag] > operation);
               _count = _countByTag[tag]--;
             }
-            _interrupted = true;
+            _taskState = 0;
             if (_count < 2) {
               delete _countByTag[tag];
               delete _stopByTag[tag];
@@ -67,14 +81,14 @@
             if (!_canceled) {
               taskList[_activeIndex]();
             }
-            _interrupted = false;
+            _taskState = 1;
             _activeIndex++;
           }
           delete _tasks[_currentTick];
           _activeIndex = 0;
           break;
         } catch (error) {
-          _interrupted = false;
+          _taskState = 1;
           _activeIndex++;
           if ((error.message !== "out of memory") || (error.stack[7] + error.stack[8] + error.stack[9] !== "run")) {
             api.broadcastMessage("Scheduler [" + tag + "]: " + error.name + ": " + error.message + ".", { color: "#ff9d87" });
@@ -83,13 +97,15 @@
             _countByTag = {};
             _stopByTag = {};
             _activeIndex = 0;
+            _tickState = 1;
+            _taskState = 0;
             api.broadcastMessage("Scheduler: Memory Error: tasks overflow.", { color: "#ff9d87" });
             break;
           }
         }
       } while (true);
     }
-    _currentTick++;
+    _tickState = 1
   };
 
   Object.freeze(_TS);
