@@ -6,6 +6,7 @@
   const _TS = {
     run: null,
     stop: null,
+    cancel: null,
     tick: null,
   };
 
@@ -18,42 +19,54 @@
   let _currentTick = 0;
   let _activeIndex = 0;
   let _tickState = 1;
-  let _taskState = 0;
+  let _taskState = 1;
   let _canceled = false;
   let _count = 0;
 
   _TS.run = (task, delay, tag) => {
     tag ??= _defaultTag;
     delay = ((delay | 0) * 0.02) | 0;
-    delay = (delay & ~(delay >> 31)); // delay > 0 ? delay : 0
+    delay = delay & ~(delay >> 31); // delay > 0 ? delay : 0
     const targetTick = _currentTick + delay;
     let queue = _tasks[targetTick];
     let index = 0;
-    if (!queue) {
-      queue = _tasks[targetTick] = [[task], [tag], [++_operation]];
+    if (!queue && delay) {
+      _tasks[targetTick] = [[task], [tag], [++_operation]];
       _countByTag[tag] = (_countByTag[tag] | 0) + 1;
-    } else {
+    } else if (queue && delay) {
       index = queue[0].length;
       queue[0][index] = task;
       queue[1][index] = tag;
       queue[2][index] = ++_operation;
       _countByTag[tag] = (_countByTag[tag] | 0) + 1;
-    }
-    if (!delay) {
+    } else if (queue && !delay) {
+      index = queue[0].length;
+      queue[0][index] = task;
+      queue[1][index] = tag;
+      queue[2][index] = ++_operation;
+      _countByTag[tag] = (_countByTag[tag] | 0) + 1;
       task();
       queue[0][index] = no_op;
+    } else {
+      queue = _tasks[targetTick] = [[task], [tag], [++_operation]];
+      _countByTag[tag] = (_countByTag[tag] | 0) + 1;
+      task();
+      queue[0][0] = no_op;
     }
-    return (() => {
-      if (_tasks[targetTick]) {
-        _tasks[targetTick][0][index] = no_op;
-      }
-    });
+    return [targetTick, index];
   };
 
   _TS.stop = (tag) => {
     tag ??= _defaultTag;
     if (_countByTag[tag] > 0) {
       _stopByTag[tag] = ++_operation;
+    }
+  };
+
+  _TS.cancel = (id) => {
+    const queue = _tasks[id[0]];
+    if (queue) {
+      queue[0][id[1]] = no_op;
     }
   };
 
@@ -74,7 +87,7 @@
               _count = _countByTag[tag]--;
             }
             _taskState = 0;
-            if (_count < 2) {
+            if (!(_count > 1)) {
               delete _countByTag[tag];
               delete _stopByTag[tag];
             }
