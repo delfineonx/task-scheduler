@@ -45,14 +45,14 @@
     }
     return (() => {
       if (_tasks[targetTick]) {
-        queue[0][index] = no_op;
+        _tasks[targetTick][0][index] = no_op;
       }
     });
   };
 
   _TS.stop = (tag) => {
     tag ??= _defaultTag;
-    if ((_countByTag[tag] | 0) > 0) {
+    if (_countByTag[tag] > 0) {
       _stopByTag[tag] = ++_operation;
     }
   };

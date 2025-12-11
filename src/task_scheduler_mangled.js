@@ -41,11 +41,11 @@
       k();
       q[0][i]=F
     }
-    return()=>{if(K[t]){q[0][i]=F}}
+    return()=>{if(K[t]){K[t][0][i]=F}}
   };
   TS_.stop=g=>{
     g??=U;
-    if((C[g]|0)>0){
+    if(C[g]>0){
       P[g]=++O
     }
   };
