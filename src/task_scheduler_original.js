@@ -90,15 +90,7 @@
         } catch (error) {
           _taskState = 1;
           _activeIndex++;
-          if ((error.message !== "out of memory") || (error.stack[7] + error.stack[8] + error.stack[9] !== "run")) {
-            api.broadcastMessage("Scheduler [" + tag + "]: " + error.name + ": " + error.message + ".", { color: "#ff9d87" });
-          } else {
-            delete _tasks[_currentTick];
-            _activeIndex = 0;
-            _tickState = 1;
-            api.broadcastMessage("Scheduler: Memory Error: tasks overflow.", { color: "#ff9d87" });
-            break;
-          }
+          api.broadcastMessage("Scheduler [" + tag + "]: " + error.name + ": " + error.message + ".", { color: "#ff9d87" });
         }
       } while (true);
     }

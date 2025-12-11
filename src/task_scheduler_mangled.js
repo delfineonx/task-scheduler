@@ -82,15 +82,7 @@
         }catch(e){
           S=1;
           A++;
-          if((e.message!=="out of memory")||(e.stack[7]+e.stack[8]+e.stack[9]!=="run")){
-            api.broadcastMessage("Scheduler ["+a+"]: "+e.name+": "+e.message+".",{color:"#ff9d87"})
-          }else{
-            delete K[T];
-            A=0;
-            I=1;
-            api.broadcastMessage("Scheduler: Memory Error: tasks overflow.",{color:"#ff9d87"});
-            break
-          }
+          api.broadcastMessage("Scheduler ["+a+"]: "+e.name+": "+e.message+".",{color:"#ff9d87"})
         }
       }while(!0)
     }
