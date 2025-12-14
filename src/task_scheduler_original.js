@@ -10,6 +10,7 @@
     isGroupActive: null,
     cancel: null,
     isTaskActive: null,
+    getGroupId: null,
     tick: null,
   };
 
@@ -29,11 +30,11 @@
     groupId ??= _defaultGroupId;
     delay = ((delay | 0) * 0.02) | 0;
     delay = delay & ~(delay >> 31); // delay > 0 ? delay : 0
-    const targetTick = _currentTick + delay;
-    let index = 0;
+    const targetTick = _currentTick + delay + (!delay & _tickState);
     let queue = _tasks[targetTick];
+    let count = _groupCount[groupId];
+    let index = 0;
     if (!queue && delay) {
-      let count = _groupCount[groupId];
       if (count === undefined) {
         count = 1;
         _groupStop[groupId] = 1;
@@ -43,39 +44,21 @@
       _tasks[targetTick] = [[task], [groupId], [++_operationId]];
       _groupCount[groupId] = count + 2;
     } else if (queue && delay) {
-      let count = _groupCount[groupId];
       if (count === undefined) {
         count = 1;
         _groupStop[groupId] = 1;
       } else if (~count & 1) {
         count++;
       }
-      index = queue[0].length;
+      index = queue[2].length;
       queue[0][index] = task;
       queue[1][index] = groupId;
       queue[2][index] = ++_operationId;
       _groupCount[groupId] = count + 2;
-    } else if (queue && !delay) {
-      let count = _groupCount[groupId];
-      if (count === undefined) {
-        count = 1;
-        _groupStop[groupId] = 1;
-      } else if (~count & 1) {
-        count++;
-      }
-      index = queue[0].length;
-      queue[0][index] = task;
-      queue[1][index] = groupId;
-      queue[2][index] = ++_operationId;
-      _groupCount[groupId] = count + 2;
-      try {
-        task();
-      } catch (error) {
-        api.broadcastMessage("Scheduler [" + groupId + "]: " + error.name + ": " + error.message + ".", { color: "#ff9d87" });
-      }
-      queue[2][index] = 1;
-    } else {
-      let count = _groupCount[groupId];
+    } else if (!_tickState) {
+      index = -1;
+      task();
+    } else if (!queue && !delay) {
       if (count === undefined) {
         count = 1;
         _groupStop[groupId] = 1;
@@ -86,10 +69,30 @@
       _groupCount[groupId] = count + 2;
       try {
         task();
+        queue[2][0] = 1;
       } catch (error) {
+        queue[2][0] = 1;
         api.broadcastMessage("Scheduler [" + groupId + "]: " + error.name + ": " + error.message + ".", { color: "#ff9d87" });
       }
-      queue[2][0] = 1;
+    } else {
+      if (count === undefined) {
+        count = 1;
+        _groupStop[groupId] = 1;
+      } else if (~count & 1) {
+        count++;
+      }
+      index = queue[2].length;
+      queue[0][index] = task;
+      queue[1][index] = groupId;
+      queue[2][index] = ++_operationId;
+      _groupCount[groupId] = count + 2;
+      try {
+        task();
+        queue[2][index] = 1;
+      } catch (error) {
+        queue[2][index] = 1;
+        api.broadcastMessage("Scheduler [" + groupId + "]: " + error.name + ": " + error.message + ".", { color: "#ff9d87" });
+      }
     }
     return [targetTick, index];
   };
@@ -109,11 +112,8 @@
 
   _TS.cancel = (taskId) => {
     const queue = _tasks[taskId[0]];
-    if (!queue) {
-      return;
-    }
     const index = taskId[1] >>> 0;
-    if (index >= queue[2].length) {
+    if (!queue || index >= queue[2].length) {
       return;
     }
     queue[2][index] = 1;
@@ -121,14 +121,20 @@
 
   _TS.isTaskActive = (taskId) => {
     const queue = _tasks[taskId[0]];
-    if (!queue) {
-      return false;
-    }
     const index = taskId[1] >>> 0;
-    if (index >= queue[2].length) {
+    if (!queue || index >= queue[2].length) {
       return false;
     }
     return (queue[2][index] > _groupStop[queue[1][index]]);
+  };
+
+  _TS.getGroupId = (taskId) => {
+    const queue = _tasks[taskId[0]];
+    const index = taskId[1] >>> 0;
+    if (!queue || index >= queue[1].length) {
+      return null;
+    }
+    return queue[1][index];
   };
 
   _TS.tick = () => {
@@ -138,7 +144,7 @@
       const taskList = queue[0];
       const groupIdList = queue[1];
       const operationIdList = queue[2];
-      let groupId, operationId
+      let groupId, operationId;
       do {
         try {
           while (operationId = operationIdList[_activeIndex]) {
@@ -172,7 +178,7 @@
     _tickState = 1
   };
 
-  Object.freeze(_TS);
+  Object.seal(_TS);
   globalThis.TS = _TS;
 
   void 0;

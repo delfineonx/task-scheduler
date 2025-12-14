@@ -10,6 +10,7 @@
     isGroupActive:null,
     cancel:null,
     isTaskActive:null,
+    getGroupId:null,
     tick:null
   },
   U="__default__",
@@ -27,11 +28,11 @@
     g??=U;
     d=(d|0)*.02|0;
     d=d&~(d>>31);
-    let n=T+d,
-    i=0,
-    q=K[n];
+    let n=T+d+(!d&I),
+    q=K[n],
+    c=C[g],
+    i=0;
     if(!q&&d){
-      let c=C[g];
       if(c===void 0){
         c=1;
         S[g]=1
@@ -41,39 +42,21 @@
       K[n]=[[f],[g],[++O]];
       C[g]=c+2
     }else if(q&&d){
-      let c=C[g];
       if(c===void 0){
         c=1;
         S[g]=1
       }else if(~c&1){
         c++
       }
-      i=q[0].length;
+      i=q[2].length;
       q[0][i]=f;
       q[1][i]=g;
       q[2][i]=++O;
       C[g]=c+2
-    }else if(q&&!d){
-      let c=C[g];
-      if(c===void 0){
-        c=1;
-        S[g]=1
-      }else if(~c&1){
-        c++
-      }
-      i=q[0].length;
-      q[0][i]=f;
-      q[1][i]=g;
-      q[2][i]=++O;
-      C[g]=c+2;
-      try{
-        f()
-      }catch(e){
-        api.broadcastMessage("Scheduler ["+g+"]: "+e.name+": "+e.message+".",{color:"#ff9d87"})
-      }
-      q[2][i]=1
-    }else{
-      let c=C[g];
+    }else if(!I){
+      i=-1;
+      f()
+    }else if(!q&&!d){
       if(c===void 0){
         c=1;
         S[g]=1
@@ -83,11 +66,31 @@
       q=K[n]=[[f],[g],[++O]];
       C[g]=c+2;
       try{
-        f()
+        f();
+        q[2][0]=1
       }catch(e){
+        q[2][0]=1;
         api.broadcastMessage("Scheduler ["+g+"]: "+e.name+": "+e.message+".",{color:"#ff9d87"})
       }
-      q[2][0]=1
+    }else{
+      if(c===void 0){
+        c=1;
+        S[g]=1
+      }else if(~c&1){
+        c++
+      }
+      i=q[2].length;
+      q[0][i]=f;
+      q[1][i]=g;
+      q[2][i]=++O;
+      C[g]=c+2;
+      try{
+        f();
+        q[2][i]=1
+      }catch(e){
+        q[2][i]=1;
+        api.broadcastMessage("Scheduler ["+g+"]: "+e.name+": "+e.message+".",{color:"#ff9d87"})
+      }
     }
     return[n,i]
   };
@@ -103,26 +106,28 @@
     return!!(C[g]&1)
   };
   TS_.cancel=k=>{
-    let q=K[k[0]];
-    if(!q){
-      return
-    }
-    let i=k[1]>>>0;
-    if(i>=q[2].length){
+    let q=K[k[0]],
+    i=k[1]>>>0;
+    if(!q||i>=q[2].length){
       return
     }
     q[2][i]=1
   };
   TS_.isTaskActive=k=>{
-    let q=K[k[0]];
-    if(!q){
-      return !1
-    }
-    let i=k[1]>>>0;
-    if(i>=q[2].length){
+    let q=K[k[0]],
+    i=k[1]>>>0;
+    if(!q||i>=q[2].length){
       return !1
     }
     return q[2][i]>S[q[1][i]]
+  };
+  TS_.getGroupId=k=>{
+    let q=K[k[0]],
+    i=k[1]>>>0;
+    if (!q||i>=q[1].length) {
+      return null
+    }
+    return q[1][i]
   };
   TS_.tick=()=>{
     let q=K[TS_.currentTick=T+=I];
@@ -164,7 +169,7 @@
     }
     I=1
   };
-  Object.freeze(TS_);
+  Object.seal(TS_);
   globalThis.TS=TS_;
   void 0
 }
